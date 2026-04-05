@@ -1,0 +1,6 @@
+flask
+requests
+pyautogui
+pygetwindow
+Pillow
+gunicorn

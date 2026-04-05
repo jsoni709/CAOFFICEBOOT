@@ -1,0 +1,142 @@
+from flask import Flask, request
+import requests
+import os
+import pyautogui
+import pygetwindow as gw
+import time
+
+app = Flask(__name__)
+
+VERIFY_TOKEN = "mybot123"
+WHATSAPP_TOKEN = "EAANbmDzhfUMBRCZBQroaZCMkYNaUeCJ231pNzHL9lKXlozpUN84ZB0xUTEwSkvpSfQfZAhAooWU1BSUjtjVBlsVUErMTWZBhhLaaz8awssVZCHZCswi6rzdLV7dZB0bVyHxgNuZCqnB3OfhnQB3VX6WdnDHOJupC65DesEms5zk2ZCueiBYqp6pElWB9P7wsZAV9pr05nUeeHH0o0r00VWU5OEZB24U2IO13ctkAo3QutLULi2Pptikd3bCVQMGwVAx883oRZABmIUfELxBU7vCZAcLQhOBgZDZD"
+PHONE_NUMBER_ID = "1106377899206038"
+SAVE_FOLDER = "C:\\BotDocs"
+
+if not os.path.exists(SAVE_FOLDER):
+    os.makedirs(SAVE_FOLDER)
+
+def send_whatsapp_message(to, message):
+    url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "text",
+        "text": {"body": message}
+    }
+    requests.post(url, headers=headers, json=data)
+
+def send_whatsapp_document(to, file_path, filename):
+    url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
+    headers = {"Authorization": f"Bearer {WHATSAPP_TOKEN}"}
+    with open(file_path, "rb") as f:
+        media = requests.post(
+            f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/media",
+            headers=headers,
+            files={"file": (filename, f, "application/pdf")},
+            data={"messaging_product": "whatsapp"}
+        )
+    media_id = media.json().get("id")
+    if not media_id:
+        send_whatsapp_message(to, "Sorry, could not send document. Please contact office.")
+        return
+    data = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "document",
+        "document": {"id": media_id, "filename": filename}
+    }
+    requests.post(url, headers=headers, json=data)
+
+def extract_from_computax(pan, doc_type):
+    try:
+        windows = gw.getWindowsWithTitle("Computax")
+        if not windows:
+            return None, "Computax is not open on this computer."
+        win = windows[0]
+        win.activate()
+        time.sleep(1)
+        send_whatsapp_message("LOG", f"Computax found. Searching PAN {pan} for {doc_type}")
+        return None, "Automation in progress - feature ready for customisation."
+    except Exception as e:
+        return None, str(e)
+
+def handle_message(sender, text):
+    text = text.strip().upper()
+    parts = text.split()
+
+    keywords = ["ITR", "GST", "AUDIT", "FORM16", "BALANCE", "PROFIT"]
+    doc_type = None
+    pan = None
+
+    for part in parts:
+        if part in keywords:
+            doc_type = part
+        if len(part) == 10 and part.isalnum():
+            pan = part
+
+    if not doc_type:
+        send_whatsapp_message(sender,
+            "Welcome to our CA Office Bot!\n\n"
+            "Please send your request in this format:\n"
+            "ITR ABCDE1234F\n"
+            "GST ABCDE1234F\n"
+            "AUDIT ABCDE1234F\n"
+            "FORM16 ABCDE1234F\n\n"
+            "Replace ABCDE1234F with your PAN number."
+        )
+        return
+
+    if not pan:
+        send_whatsapp_message(sender,
+            f"Please also send your PAN number.\n"
+            f"Example: {doc_type} ABCDE1234F"
+        )
+        return
+
+    send_whatsapp_message(sender,
+        f"Thank you! We are fetching your {doc_type} for PAN {pan}.\n"
+        f"Please wait 1-2 minutes..."
+    )
+
+    file_path, error = extract_from_computax(pan, doc_type)
+
+    if error:
+        send_whatsapp_message(sender,
+            f"Sorry, we could not fetch your document right now.\n"
+            f"Please call our office. Error: {error}"
+        )
+    elif file_path:
+        filename = f"{pan}_{doc_type}.pdf"
+        send_whatsapp_document(sender, file_path, filename)
+
+@app.route("/webhook", methods=["GET"])
+def verify():
+    mode = request.args.get("hub.mode")
+    token = request.args.get("hub.verify_token")
+    challenge = request.args.get("hub.challenge")
+    if mode == "subscribe" and token == VERIFY_TOKEN:
+        return challenge, 200
+    return "Forbidden", 403
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    data = request.get_json()
+    try:
+        entry = data["entry"][0]
+        changes = entry["changes"][0]
+        value = changes["value"]
+        if "messages" in value:
+            msg = value["messages"][0]
+            sender = msg["from"]
+            text = msg["text"]["body"]
+            handle_message(sender, text)
+    except Exception as e:
+        print("Error:", e)
+    return "OK", 200
+
+if __name__ == "__main__":
+    app.run(port=5000, debug=True)
