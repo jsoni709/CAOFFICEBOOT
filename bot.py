@@ -5,21 +5,14 @@ import os
 app = Flask(__name__)
 
 VERIFY_TOKEN = "mybot123"
-WHATSAPP_TOKEN = "EAANbmDzhfUMBREfLLeXi4SHMW1Pig9lof0N6yeJoXVal5DaLgpdqIgxxIRR7L4L7i0SMlZBbn1G00cfvfGqMmmjwekoZBe5m3RGZBTZAhZA2rsgaotYxE0vLCPiquDPg49BesZBVUQbvXlfZAsxreP9N2kdMemJnxoZAWZCnMF5j5k3ZBU5X3G0k0jNux7oBSX6ohiri1APXbc8du8O0vXulBZCXNADCuHuiEIkVGsYhY9xiXlTX8tSVlCi0MU2IzxSJjwjBZCMR3l4KcRxzXey01Re8"
+WHATSAPP_TOKEN = "EAANbmDzhfUMBRCZBQroaZCMkYNaUeCJ231pNzHL9lKXlozpUN84ZB0xUTEwSkvpSfQfZAhAooWU1BSUjtjVBlsVUErMTWZBhhLaaz8awssVZCHZCswi6rzdLV7dZB0bVyHxgNuZCqnB3OfhnQB3VX6WdnDHOJupC65DesEms5zk2ZCueiBYqp6pElWB9P7wsZAV9pr05nUeeHH0o0r00VWU5OEZB24U2IO13ctkAo3QutLULi2Pptikd3bCVQMGwVAx883oRZABmIUfELxBU7vCZAcLQhOBgZDZD"
 PHONE_NUMBER_ID = "1106377899206038"
+AGENT_URL = "https://clint-translucent-zack.ngrok-free.dev/process"
 
-def send_message(to, message):
-    url = f"https://graph.facebook.com/v22.0/{PHONE_NUMBER_ID}/messages"
-    headers = {
-        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
-        "Content-Type": "application/json"
-    }
-    data = {
-        "messaging_product": "whatsapp",
-        "to": to,
-        "type": "text",
-        "text": {"body": message}
-    }
+def send_message(to, msg):
+    url = "https://graph.facebook.com/v22.0/" + PHONE_NUMBER_ID + "/messages"
+    headers = {"Authorization": "Bearer " + WHATSAPP_TOKEN, "Content-Type": "application/json"}
+    data = {"messaging_product": "whatsapp", "to": to, "type": "text", "text": {"body": msg}}
     requests.post(url, headers=headers, json=data)
 
 def handle_message(sender, text):
@@ -35,29 +28,25 @@ def handle_message(sender, text):
             pan = part
     if not doc_type:
         send_message(sender,
-            "Welcome to Soni Soni & Co CA Office!\n\n"
-            "Send your request in this format:\n"
+            "Welcome to Soni Soni & Co!\n\n"
+            "Send your request:\n"
             "ITR ABCDE1234F\n"
             "GST ABCDE1234F\n"
             "AUDIT ABCDE1234F\n"
             "FORM16 ABCDE1234F\n"
             "BALANCE ABCDE1234F\n"
-            "COMPUTATION ABCDE1234F\n"
-            "TDSRETURN ABCDE1234F\n"
-            "NOTICE ABCDE1234F\n\n"
-            "Replace ABCDE1234F with your PAN number."
+            "COMPUTATION ABCDE1234F\n\n"
+            "Replace ABCDE1234F with your PAN."
         )
         return
     if not pan:
-        send_message(sender, f"Please send your PAN number also.\nExample: {doc_type} ABCDE1234F")
+        send_message(sender, "Please send your PAN number also.\nExample: " + doc_type + " ABCDE1234F")
         return
-    send_message(sender,
-        f"Dear Client,\n\n"
-        f"We have received your request for {doc_type}.\n"
-        f"PAN: {pan}\n\n"
-        f"Our team will process your request and send the document shortly.\n\n"
-        f"Thank you!\nSoni Soni & Co"
-    )
+    send_message(sender, "Request received! Fetching your " + doc_type + " for PAN " + pan + ". Please wait 2-3 minutes...")
+    try:
+        requests.post(AGENT_URL, json={"pan": pan, "doc_type": doc_type, "sender": sender}, timeout=5)
+    except:
+        pass
 
 @app.route("/webhook", methods=["GET"])
 def verify():
