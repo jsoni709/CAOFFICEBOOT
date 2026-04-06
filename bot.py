@@ -1,20 +1,16 @@
 from flask import Flask, request
 import requests
 import os
-
 app = Flask(__name__)
-
 VERIFY_TOKEN = "mybot123"
 WHATSAPP_TOKEN = "EAANbmDzhfUMBRCZBQroaZCMkYNaUeCJ231pNzHL9lKXlozpUN84ZB0xUTEwSkvpSfQfZAhAooWU1BSUjtjVBlsVUErMTWZBhhLaaz8awssVZCHZCswi6rzdLV7dZB0bVyHxgNuZCqnB3OfhnQB3VX6WdnDHOJupC65DesEms5zk2ZCueiBYqp6pElWB9P7wsZAV9pr05nUeeHH0o0r00VWU5OEZB24U2IO13ctkAo3QutLULi2Pptikd3bCVQMGwVAx883oRZABmIUfELxBU7vCZAcLQhOBgZDZD"
 PHONE_NUMBER_ID = "1106377899206038"
 AGENT_URL = "https://clint-translucent-zack.ngrok-free.dev/process"
-
 def send_message(to, msg):
     url = "https://graph.facebook.com/v22.0/" + PHONE_NUMBER_ID + "/messages"
     headers = {"Authorization": "Bearer " + WHATSAPP_TOKEN, "Content-Type": "application/json"}
     data = {"messaging_product": "whatsapp", "to": to, "type": "text", "text": {"body": msg}}
     requests.post(url, headers=headers, json=data)
-
 def handle_message(sender, text):
     text = text.strip().upper()
     parts = text.split()
@@ -27,17 +23,7 @@ def handle_message(sender, text):
         if len(part) == 10 and part.isalnum():
             pan = part
     if not doc_type:
-        send_message(sender,
-            "Welcome to Soni Soni & Co!\n\n"
-            "Send your request:\n"
-            "ITR ABCDE1234F\n"
-            "GST ABCDE1234F\n"
-            "AUDIT ABCDE1234F\n"
-            "FORM16 ABCDE1234F\n"
-            "BALANCE ABCDE1234F\n"
-            "COMPUTATION ABCDE1234F\n\n"
-            "Replace ABCDE1234F with your PAN."
-        )
+        send_message(sender, "Welcome to Soni Soni & Co!\n\nSend your request:\nITR ABCDE1234F\nGST ABCDE1234F\nAUDIT ABCDE1234F\nFORM16 ABCDE1234F\nBALANCE ABCDE1234F\nCOMPUTATION ABCDE1234F\n\nReplace ABCDE1234F with your PAN.")
         return
     if not pan:
         send_message(sender, "Please send your PAN number also.\nExample: " + doc_type + " ABCDE1234F")
@@ -45,9 +31,26 @@ def handle_message(sender, text):
     send_message(sender, "Request received! Fetching your " + doc_type + " for PAN " + pan + ". Please wait 2-3 minutes...")
     try:
         requests.post(AGENT_URL, json={"pan": pan, "doc_type": doc_type, "sender": sender}, timeout=5)
-    except:
+    except Exception:
         pass
-
+@app.route("/send_message", methods=["POST"])
+def send_message_route():
+    data = request.get_json()
+    send_message(data["to"], data["msg"])
+    return "OK", 200
+@app.route("/send_doc", methods=["POST"])
+def send_doc_route():
+    to = request.form.get("to")
+    name = request.form.get("name")
+    f = request.files.get("file")
+    url = "https://graph.facebook.com/v22.0/" + PHONE_NUMBER_ID + "/messages"
+    headers = {"Authorization": "Bearer " + WHATSAPP_TOKEN}
+    media = requests.post("https://graph.facebook.com/v22.0/" + PHONE_NUMBER_ID + "/media", headers=headers, files={"file": (name, f, "application/pdf")}, data={"messaging_product": "whatsapp"})
+    mid = media.json().get("id")
+    if mid:
+        data = {"messaging_product": "whatsapp", "to": to, "type": "document", "document": {"id": mid, "filename": name}}
+        requests.post(url, headers=headers, json=data)
+    return "OK", 200
 @app.route("/webhook", methods=["GET"])
 def verify():
     mode = request.args.get("hub.mode")
@@ -56,7 +59,6 @@ def verify():
     if mode == "subscribe" and token == VERIFY_TOKEN:
         return challenge, 200
     return "Forbidden", 403
-
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json()
@@ -72,7 +74,6 @@ def webhook():
     except Exception as e:
         print("Error:", e)
     return "OK", 200
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
