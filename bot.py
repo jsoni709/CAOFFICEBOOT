@@ -1,6 +1,7 @@
 from flask import Flask, request
 import requests
 import os
+import io
 app = Flask(__name__)
 VERIFY_TOKEN = "mybot123"
 WHATSAPP_TOKEN = "EAANbmDzhfUMBRYfyLIpZBLgAwtrea0QKkdzR4ZBbcyR4ZB6VdEJshp4f4MQ9857OnmdENmyigi2WXKcIz0Up6Ng93T3VJvh6ga87ywFwZBLcp0s7dAFHnpYtuJIJ57hY27DuZBR15BkUNU6yjY1dlLKkBOukZCCZBoT9YXy3ed7XDMPvySup4ItI5LaNiMOtHlsSo8nGiDwyu4RWZCW0V7JGhRwH7tBtzckTyg7MLWlcZADItcvuIIBZCFGZACdOZBlyApNL2plo1GCzm2FBZAjoHkBLH"
@@ -43,13 +44,22 @@ def send_doc_route():
     to = request.form.get("to")
     name = request.form.get("name")
     f = request.files.get("file")
+    print("Sending doc to:", to, "name:", name)
     url = "https://graph.facebook.com/v22.0/" + PHONE_NUMBER_ID + "/messages"
     headers = {"Authorization": "Bearer " + WHATSAPP_TOKEN}
-    media = requests.post("https://graph.facebook.com/v22.0/" + PHONE_NUMBER_ID + "/media", headers=headers, files={"file": (name, f, "application/pdf")}, data={"messaging_product": "whatsapp"})
+    file_content = f.read()
+    media = requests.post(
+        "https://graph.facebook.com/v22.0/" + PHONE_NUMBER_ID + "/media",
+        headers=headers,
+        files={"file": (name, io.BytesIO(file_content), "application/pdf")},
+        data={"messaging_product": "whatsapp"}
+    )
+    print("Media upload response:", media.status_code, media.text)
     mid = media.json().get("id")
     if mid:
         data = {"messaging_product": "whatsapp", "to": to, "type": "document", "document": {"id": mid, "filename": name}}
-        requests.post(url, headers=headers, json=data)
+        resp = requests.post(url, headers=headers, json=data)
+        print("Send doc response:", resp.status_code, resp.text)
     return "OK", 200
 @app.route("/webhook", methods=["GET"])
 def verify():
