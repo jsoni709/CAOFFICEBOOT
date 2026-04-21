@@ -4,7 +4,7 @@ import os
 import io
 app = Flask(__name__)
 VERIFY_TOKEN = "mybot123"
-WHATSAPP_TOKEN = "127.0.0.1 - - [21/Apr/2026:17:18:05 +0000] "POST /webhook HTTP/1.1" 200 2 "-" "facebookexternalua"
+WHATSAPP_TOKEN = "EAANbmDzhfUMBRfYEPakvH4IDO8UnjlALQrjD3H5dZBt08sFngJ2U2r2c2ZC92qWnB2XzyRmeAVZBvl9teOFUTJhhb06oP9gTROO2MJ4AUJJ03XdwaYkvY5lLTcjFdcK5Gs2kXhuqg5G5pljY17BW2grbZBTw724yF8dipZCsQxZCauWHXdpQoyhFVVduJQd2xphGtixoY4wZC6UyZCJ9sLRsRK8E9RHiL012y4SPfmrsTimxg4VZBRfIh7YN5wLLobbOiZBylwN5nZAyzV2oQ34Gmg6"
 127.0.0.1 - - [21/Apr/2026:17:18:05 +0000] "POST /send_message HTTP/1.1" 200 2 "-" "python-requests/2.33.1"
 Sending doc to: 917737378686 name: FONPS4462G_COMPUTATION.pdf
 Media upload response: 401 {"error":{"message":"Authentication Error","code":190,"type":"OAuthException","fbtrace_id":"ARMu59h-Od_1XjKA4vCIxt2"}}
