@@ -4,7 +4,12 @@ import os
 import io
 app = Flask(__name__)
 VERIFY_TOKEN = "mybot123"
-WHATSAPP_TOKEN = "EAANbmDzhfUMBRWIURwF3LLugavsGWDj7R6VBN6vTwWrpt1owEZChc6tGAttfEZBdBGnZC3oFeZAGll95cvXuQDPYDeByyFcZCXLwrwIbHhdr5earVjRL7ZCRB7ZB2A8Cb6UphxAcJlQ2I5ZBVTSdTTTTuSo950o2tvkqdiinm3PCnZAuSaT358pCQukksnonqZBF4X8CWsqmpZBDGXqUModbWlZBAp6TNXLnL910vaKW8OWpZBw3nuzpsuf4dIupF941jH6lFQ2GXnLwUFUKZCPpZBN50CR"
+WHATSAPP_TOKEN = "127.0.0.1 - - [21/Apr/2026:17:18:05 +0000] "POST /webhook HTTP/1.1" 200 2 "-" "facebookexternalua"
+127.0.0.1 - - [21/Apr/2026:17:18:05 +0000] "POST /send_message HTTP/1.1" 200 2 "-" "python-requests/2.33.1"
+Sending doc to: 917737378686 name: FONPS4462G_COMPUTATION.pdf
+Media upload response: 401 {"error":{"message":"Authentication Error","code":190,"type":"OAuthException","fbtrace_id":"ARMu59h-Od_1XjKA4vCIxt2"}}
+127.0.0.1 - - [21/Apr/2026:17:19:17 +0000] "POST /send_doc HTTP/1.1" 200 2 "-" "python-requests/2.33.1"
+127.0.0.1 - - [21/Apr/2026:17:19:18 +0000] "POST /send_message HTTP/1.1" 200 2 "-" "python-requests/2.33.1""
 PHONE_NUMBER_ID = "1106377899206038"
 AGENT_URL = "https://clint-translucent-zack.ngrok-free.dev/process"
 def send_message(to, msg):
