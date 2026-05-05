@@ -4,8 +4,7 @@ import os
 import io
 app = Flask(__name__)
 VERIFY_TOKEN = "mybot123"
-WHATSAPP_TOKEN = "EAANbmDzhfUMBRQTA9MxZAtxingxcQgLmYZB7o2CHqyopbYvIUzXF8upMHPgord7olHh6fZBHZAFGgaSJLuoDWAzONrF20ZCtiQs3LWNu7lDSfqYB9AgVvPk0tBYtESigttMqADpaR3BXdhqnjZA2GUOBInivMUlbDlBLdus7rceT6iMxsKlFUxCZCIrLIZAc
-"
+WHATSAPP_TOKEN = "EAANbmDzhfUMBRQTA9MxZAtxingxcQgLmYZB7o2CHqyopbYvIUzXF8upMHPgord7olHh6fZBHZAFGgaSJLuoDWAzONrF20ZCtiQs3LWNu7lDSfqYB9AgVvPk0tBYtESigttMqADpaR3BXdhqnjZA2GUOBInivMUlbDlBLdus7rceT6iMxsKlFUxCZCIrLIZAc"
 PHONE_NUMBER_ID = "1106377899206038"
 AGENT_URL = "https://clint-translucent-zack.ngrok-free.dev/process"
 def send_message(to, msg):
