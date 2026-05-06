@@ -19,6 +19,7 @@ def handle_message(sender, text):
     doc_type = None
     pan = None
     include_bs = False
+    year = "2025"
     for part in parts:
         if part in keywords:
             if part == "BS" and doc_type == "ITR":
@@ -27,6 +28,8 @@ def handle_message(sender, text):
                 doc_type = "BALANCE"
             else:
                 doc_type = part
+        if len(part) == 4 and part.isdigit() and 2007 <= int(part) <= 2026:
+            year = part
         if len(part) == 10 and part.isalnum():
             pan = part
     if doc_type == "ITR" and include_bs:
@@ -36,21 +39,24 @@ def handle_message(sender, text):
             "Welcome to Soni Soni & Co!\n\n"
             "Send your request:\n"
             "ITR ABCDE1234F\n"
+            "ITR 2024 ABCDE1234F\n"
             "ITR BS ABCDE1234F\n"
+            "ITR BS 2024 ABCDE1234F\n"
             "BS ABCDE1234F\n"
+            "BS 2024 ABCDE1234F\n"
             "COMPUTATION ABCDE1234F\n"
-            "GST ABCDE1234F\n"
-            "AUDIT ABCDE1234F\n"
-            "FORM16 ABCDE1234F\n\n"
-            "Replace ABCDE1234F with your PAN."
+            "COMPUTATION 2024 ABCDE1234F\n\n"
+            "Replace ABCDE1234F with your PAN.\n"
+            "Year is optional - default is current year."
         )
         return
     if not pan:
-        send_message(sender, "Please send your PAN number also.\nExample: " + doc_type + " ABCDE1234F")
+        send_message(sender, "Please send your PAN number also.\nExample: ITR 2024 ABCDE1234F")
         return
-    send_message(sender, "Request received! Fetching your documents for PAN " + pan + ". Please wait 3-5 minutes...")
+    year_display = year + "-" + str(int(year) + 1)
+    send_message(sender, "Request received! Fetching " + doc_type + " for PAN " + pan + " Year " + year_display + ". Please wait 3-5 minutes...")
     try:
-        requests.post(AGENT_URL, json={"pan": pan, "doc_type": doc_type, "sender": sender}, timeout=5)
+        requests.post(AGENT_URL, json={"pan": pan, "doc_type": doc_type, "sender": sender, "year": year}, timeout=5)
     except Exception:
         pass
 @app.route("/send_message", methods=["POST"])
