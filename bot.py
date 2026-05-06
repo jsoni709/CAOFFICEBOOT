@@ -2,6 +2,8 @@ from flask import Flask, request
 import requests
 import os
 import io
+import time
+import threading
 app = Flask(__name__)
 VERIFY_TOKEN = "mybot123"
 WHATSAPP_TOKEN = "EAANbmDzhfUMBRQTA9MxZAtxingxcQgLmYZB7o2CHqyopbYvIUzXF8upMHPgord7olHh6fZBHZAFGgaSJLuoDWAzONrF20ZCtiQs3LWNu7lDSfqYB9AgVvPk0tBYtESigttMqADpaR3BXdhqnjZA2GUOBInivMUlbDlBLdus7rceT6iMxsKlFUxCZCIrLIZAc"
@@ -13,8 +15,8 @@ def send_message(to, msg):
     data = {"messaging_product": "whatsapp", "to": to, "type": "text", "text": {"body": msg}}
     requests.post(url, headers=headers, json=data)
 def handle_message(sender, text):
-    text = text.strip().upper()
-    parts = text.split()
+    text_upper = text.strip().upper()
+    parts = text_upper.split()
     keywords = ["ITR", "GST", "AUDIT", "FORM16", "BS", "COMPUTATION", "TDSRETURN", "NOTICE"]
     doc_type = None
     pan = None
@@ -45,16 +47,18 @@ def handle_message(sender, text):
             "BS ABCDE1234F\n"
             "BS 2024 ABCDE1234F\n"
             "COMPUTATION ABCDE1234F\n"
-            "COMPUTATION 2024 ABCDE1234F\n\n"
+            "COMPUTATION 2024 ABCDE1234F\n"
+            "AUDIT ABCDE1234F\n"
+            "AUDIT 2024 ABCDE1234F\n\n"
             "Replace ABCDE1234F with your PAN.\n"
             "Year is optional - default is current year."
         )
         return
     if not pan:
-        send_message(sender, "Please send your PAN number also.\nExample: ITR 2024 ABCDE1234F")
+        send_message(sender, "Please send your PAN number also.\nExample: AUDIT 2024 ABCDE1234F")
         return
     year_display = year + "-" + str(int(year) + 1)
-    send_message(sender, "Request received! Fetching " + doc_type + " for PAN " + pan + " Year " + year_display + ". Please wait 3-5 minutes...")
+    send_message(sender, "Request received! Fetching " + doc_type + " for PAN " + pan + " Year " + year_display + ". Please wait 5-8 minutes...")
     try:
         requests.post(AGENT_URL, json={"pan": pan, "doc_type": doc_type, "sender": sender, "year": year}, timeout=5)
     except Exception:
