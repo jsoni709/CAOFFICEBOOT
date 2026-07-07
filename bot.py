@@ -6,14 +6,15 @@ import time
 import threading
 app = Flask(__name__)
 VERIFY_TOKEN = "mybot123"
-WHATSAPP_TOKEN = "EAANbmDzhfUMBRQTA9MxZAtxingxcQgLmYZB7o2CHqyopbYvIUzXF8upMHPgord7olHh6fZBHZAFGgaSJLuoDWAzONrF20ZCtiQs3LWNu7lDSfqYB9AgVvPk0tBYtESigttMqADpaR3BXdhqnjZA2GUOBInivMUlbDlBLdus7rceT6iMxsKlFUxCZCIrLIZAc"
+WHATSAPP_TOKEN = "EAANbmDzhfUMBRxzDEQ4qxpP0tX7jkpnR706MhkUrOZAbuaRcZAsV28SGn5mpmwucP0EBZAwQGHmbR1GjZAYcIB43qkLkhRINTGgqPWLZAZAYuUq8fS0FnrVLL8DuMmSZB6sqSY5l9fNwGj5u73dH5X97j5UqBggvMXzgKZACPZCzcNuIbtZAxs1RrAKgkOsfFoeSgiyc2TwZCHbZAk47o4Lqx4urt8jXXhnPt24h6HZBlda8RG5WXZCRkHxiLq9KZCFyoqFygricbZAePf0gpJe1fuhYF0MAh472mwZDZD"
 PHONE_NUMBER_ID = "1106377899206038"
 AGENT_URL = "https://clint-translucent-zack.ngrok-free.dev/process"
 def send_message(to, msg):
     url = "https://graph.facebook.com/v22.0/" + PHONE_NUMBER_ID + "/messages"
     headers = {"Authorization": "Bearer " + WHATSAPP_TOKEN, "Content-Type": "application/json"}
     data = {"messaging_product": "whatsapp", "to": to, "type": "text", "text": {"body": msg}}
-    requests.post(url, headers=headers, json=data)
+    resp = requests.post(url, headers=headers, json=data)
+    print("send_message to:", to, "status:", resp.status_code, "resp:", resp.text[:300])
 def handle_message(sender, text):
     text_upper = text.strip().upper()
     parts = text_upper.split()
@@ -107,11 +108,17 @@ def webhook():
         value = changes["value"]
         if "messages" in value:
             msg = value["messages"][0]
+            if msg.get("type") != "text":
+                print("Non-text message ignored:", msg.get("type"))
+                return "OK", 200
             sender = msg["from"]
             text = msg["text"]["body"]
-            handle_message(sender, text)
+            print("Message from", sender, ":", text)
+            threading.Thread(target=handle_message, args=(sender, text), daemon=True).start()
+        else:
+            print("No messages, keys:", list(value.keys()))
     except Exception as e:
-        print("Error:", e)
+        print("Webhook error:", e)
     return "OK", 200
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
