@@ -19,24 +19,31 @@ def handle_message(sender, text):
     text_upper = text.strip().upper()
     parts = text_upper.split()
     keywords = ["ITR", "GST", "AUDIT", "FORM16", "BS", "COMPUTATION", "TDSRETURN", "NOTICE"]
-    doc_type = None
+    found_keywords = []
     pan = None
     include_bs = False
-    year = "2025"
+    years = []
     for part in parts:
         if part in keywords:
-            if part == "BS" and doc_type == "ITR":
+            if part == "BS":
                 include_bs = True
-            elif part == "BS":
-                doc_type = "BALANCE"
-            else:
-                doc_type = part
+            elif part not in found_keywords:
+                found_keywords.append(part)
         if len(part) == 4 and part.isdigit() and 2007 <= int(part) <= 2026:
-            year = part
+            years.append(part)
         if len(part) == 10 and part.isalnum():
             pan = part
-    if doc_type == "ITR" and include_bs:
+    if not years:
+        years = ["2025"]
+    doc_type = None
+    if "ITR" in found_keywords and "AUDIT" in found_keywords:
+        doc_type = "ITR_AUDIT"
+    elif "ITR" in found_keywords and include_bs:
         doc_type = "ITR_BS"
+    elif include_bs:
+        doc_type = "BALANCE"
+    elif found_keywords:
+        doc_type = found_keywords[0]
     if not doc_type:
         send_message(sender,
             "Welcome to Soni Soni & Co!\n\n"
@@ -45,6 +52,8 @@ def handle_message(sender, text):
             "ITR 2024 ABCDE1234F\n"
             "ITR BS ABCDE1234F\n"
             "ITR BS 2024 ABCDE1234F\n"
+            "ITR AUDIT ABCDE1234F\n"
+            "ITR AUDIT 2023 2024 2025 ABCDE1234F\n"
             "BS ABCDE1234F\n"
             "BS 2024 ABCDE1234F\n"
             "COMPUTATION ABCDE1234F\n"
@@ -52,18 +61,23 @@ def handle_message(sender, text):
             "AUDIT ABCDE1234F\n"
             "AUDIT 2024 ABCDE1234F\n\n"
             "Replace ABCDE1234F with your PAN.\n"
-            "Year is optional - default is current year."
+            "Year is optional - default is current year.\n"
+            "ITR AUDIT supports multiple years at once."
         )
         return
     if not pan:
-        send_message(sender, "Please send your PAN number also.\nExample: AUDIT 2024 ABCDE1234F")
+        send_message(sender, "Please send your PAN number also.\nExample: ITR AUDIT 2024 2025 ABCDE1234F")
         return
-    year_display = year + "-" + str(int(year) + 1)
-    send_message(sender, "Request received! Fetching " + doc_type + " for PAN " + pan + " Year " + year_display + ". Please wait 5-8 minutes...")
-    try:
-        requests.post(AGENT_URL, json={"pan": pan, "doc_type": doc_type, "sender": sender, "year": year}, timeout=5)
-    except Exception:
-        pass
+    years_display = ", ".join(y + "-" + str(int(y) + 1)[-2:] for y in years)
+    if len(years) > 1:
+        send_message(sender, "Request received! Fetching " + doc_type + " for PAN " + pan + " for years: " + years_display + ". Processing one year at a time, please wait...")
+    else:
+        send_message(sender, "Request received! Fetching " + doc_type + " for PAN " + pan + " Year " + years_display + ". Please wait 5-8 minutes...")
+    for year in years:
+        try:
+            requests.post(AGENT_URL, json={"pan": pan, "doc_type": doc_type, "sender": sender, "year": year}, timeout=5)
+        except Exception:
+            pass
 @app.route("/send_message", methods=["POST"])
 def send_message_route():
     data = request.get_json()
