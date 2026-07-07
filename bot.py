@@ -70,14 +70,13 @@ def handle_message(sender, text):
         return
     years_display = ", ".join(y + "-" + str(int(y) + 1)[-2:] for y in years)
     if len(years) > 1:
-        send_message(sender, "Request received! Fetching " + doc_type + " for PAN " + pan + " for years: " + years_display + ". Processing one year at a time, please wait...")
+        send_message(sender, "Request received! Fetching " + doc_type + " for PAN " + pan + " for years: " + years_display + ". Processing all years in one session, please wait...")
     else:
         send_message(sender, "Request received! Fetching " + doc_type + " for PAN " + pan + " Year " + years_display + ". Please wait 5-8 minutes...")
-    for year in years:
-        try:
-            requests.post(AGENT_URL, json={"pan": pan, "doc_type": doc_type, "sender": sender, "year": year}, timeout=5)
-        except Exception:
-            pass
+    try:
+        requests.post(AGENT_URL, json={"pan": pan, "doc_type": doc_type, "sender": sender, "years": years}, timeout=5)
+    except Exception:
+        pass
 @app.route("/send_message", methods=["POST"])
 def send_message_route():
     data = request.get_json()
