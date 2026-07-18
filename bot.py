@@ -50,19 +50,24 @@ def handle_message(sender, text):
             "Send your request:\n"
             "ITR ABCDE1234F\n"
             "ITR 2024 ABCDE1234F\n"
+            "ITR 2023 2024 2025 ABCDE1234F\n"
             "ITR BS ABCDE1234F\n"
             "ITR BS 2024 ABCDE1234F\n"
+            "ITR BS 2023 2024 2025 ABCDE1234F\n"
             "ITR AUDIT ABCDE1234F\n"
             "ITR AUDIT 2023 2024 2025 ABCDE1234F\n"
             "BS ABCDE1234F\n"
             "BS 2024 ABCDE1234F\n"
+            "BS 2023 2024 2025 ABCDE1234F\n"
             "COMPUTATION ABCDE1234F\n"
             "COMPUTATION 2024 ABCDE1234F\n"
+            "COMPUTATION 2023 2024 2025 ABCDE1234F\n"
             "AUDIT ABCDE1234F\n"
-            "AUDIT 2024 ABCDE1234F\n\n"
+            "AUDIT 2024 ABCDE1234F\n"
+            "AUDIT 2023 2024 2025 ABCDE1234F\n\n"
             "Replace ABCDE1234F with your PAN.\n"
             "Year is optional - default is current year.\n"
-            "ITR AUDIT supports multiple years at once."
+            "All commands support multiple years at once."
         )
         return
     if not pan:
@@ -91,6 +96,7 @@ def send_doc_route():
     url = "https://graph.facebook.com/v22.0/" + PHONE_NUMBER_ID + "/messages"
     headers = {"Authorization": "Bearer " + WHATSAPP_TOKEN}
     file_content = f.read()
+    print("File size bytes:", len(file_content))
     media = requests.post(
         "https://graph.facebook.com/v22.0/" + PHONE_NUMBER_ID + "/media",
         headers=headers,
@@ -99,10 +105,15 @@ def send_doc_route():
     )
     print("Media upload response:", media.status_code, media.text)
     mid = media.json().get("id")
-    if mid:
-        data = {"messaging_product": "whatsapp", "to": to, "type": "document", "document": {"id": mid, "filename": name}}
-        resp = requests.post(url, headers=headers, json=data)
-        print("Send doc response:", resp.status_code, resp.text)
+    if not mid:
+        print("MEDIA UPLOAD FAILED for", name, "-", media.text)
+        return "MEDIA_UPLOAD_FAILED: " + media.text, 502
+    data = {"messaging_product": "whatsapp", "to": to, "type": "document", "document": {"id": mid, "filename": name}}
+    resp = requests.post(url, headers=headers, json=data)
+    print("Send doc response:", resp.status_code, resp.text)
+    if resp.status_code != 200:
+        print("SEND DOC FAILED for", name, "-", resp.text)
+        return "SEND_FAILED: " + resp.text, 502
     return "OK", 200
 @app.route("/webhook", methods=["GET"])
 def verify():
